@@ -57,8 +57,11 @@ WSGI_APPLICATION = 'psys.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'service': 'postgres',
+            'passfile': '.pgpass',
+        },
     }
 }
 
@@ -107,5 +110,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # HERE STARTS DYNACONF EXTENSION LOAD (Keep at the very bottom of settings.py)
 # Read more at https://www.dynaconf.com/django/
 import dynaconf  # noqa
+
 settings = dynaconf.DjangoDynaconf(__name__)  # noqa
 # HERE ENDS DYNACONF EXTENSION LOAD (No more code below this line)
