@@ -36,7 +36,12 @@ split_on_trailing_comma = "true"
 pythonpath = "."
 
 [tool.blue]
-extend-exclude = "(migrations/)"
+extend-exclude = """
+(
+    ^/manage.py
+    | migrations/
+)
+"""
 
 [tool.taskipy.tasks]
 lint = 'ruff check . && blue --check . --diff && isort --check . --diff'
