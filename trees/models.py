@@ -19,26 +19,11 @@ class Account(models.Model):
         ordering = ['created']
 
 
-class Tree(models.Model):
-    name = models.CharField(
-        max_length=settings.CHAR_FIELD_MAX_LENGTH, unique=True
-    )
-    scientific_name = models.CharField(unique=True)
-
-
 class User(AbstractUser):
     accounts = models.ManyToManyField(Account)
 
     class Meta:
         ordering = ['username']
-
-
-class PlantedTree(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    account = models.OneToOneField(Account, on_delete=models.CASCADE)
-    tree = models.ForeignKey(Tree, on_delete=models.CASCADE)
-    planted_at = models.DateTimeField(default=now)
-    age = models.IntegerField(default=0)
 
 
 class Profile(models.Model):
@@ -47,3 +32,18 @@ class Profile(models.Model):
     )
     about = models.TextField()
     joined = models.DateTimeField(auto_now_add=True)
+
+
+class Tree(models.Model):
+    name = models.CharField(
+        max_length=settings.CHAR_FIELD_MAX_LENGTH, unique=True
+    )
+    scientific_name = models.CharField(unique=True)
+
+
+class PlantedTree(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account = models.OneToOneField(Account, on_delete=models.CASCADE)
+    tree = models.ForeignKey(Tree, on_delete=models.CASCADE)
+    planted_at = models.DateTimeField(default=now)
+    age = models.IntegerField(default=0)

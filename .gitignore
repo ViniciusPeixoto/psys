@@ -1,4 +1,5 @@
 __pycache__/
+static/
 # secret files
 .env
 .secrets.*
