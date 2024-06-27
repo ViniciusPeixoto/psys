@@ -1,5 +1,14 @@
+# cache
+*_cache/
 __pycache__/
+
+# folders
+.vscode/
 static/
+
+# files
+.coverage
+
 # secret files
 .env
 .secrets.*
