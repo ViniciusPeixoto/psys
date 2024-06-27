@@ -87,9 +87,7 @@ class User(AbstractUser):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, primary_key=True
-    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     about = models.TextField()
     joined = models.DateTimeField(auto_now_add=True)
 
