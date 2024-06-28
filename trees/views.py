@@ -1,4 +1,5 @@
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
+from rest_framework.response import Response
 
 from trees.models import Account, PlantedTree, Profile, Tree, User
 from trees.serializers import (
@@ -28,6 +29,17 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        headers = self.get_success_headers(serializer.data)
+        # remove password from response
+        data = serializer.data.copy()
+        data.pop('password')
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class TreeViewSet(viewsets.ModelViewSet):

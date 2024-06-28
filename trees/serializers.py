@@ -10,7 +10,9 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    accounts = AccountSerializer(many=True)
+    accounts = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.all(), many=True
+    )
 
     class Meta:
         model = User
