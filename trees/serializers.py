@@ -36,6 +36,15 @@ class TreeSerializer(serializers.ModelSerializer):
 
 
 class PlantedTreeSerializer(serializers.ModelSerializer):
+    tree = serializers.PrimaryKeyRelatedField(queryset=Tree.objects.all())
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    account = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.all()
+    )
+    age = serializers.IntegerField(required=False)
+    location = serializers.ListField(required=False)
+
     class Meta:
         model = PlantedTree
         fields = '__all__'
+        depth = 1
