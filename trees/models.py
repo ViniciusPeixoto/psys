@@ -21,6 +21,9 @@ class Account(models.Model):
     class Meta:
         ordering = ['created']
 
+    def __str__(self) -> str:
+        return f"{self.name}, {'active' if self.active else 'inactive'}"
+
 
 class Tree(models.Model):
     name = models.CharField(
@@ -28,12 +31,18 @@ class Tree(models.Model):
     )
     scientific_name = models.CharField(unique=True)
 
+    def __str__(self) -> str:
+        return f'{self.name}, {self.scientific_name}'
+
 
 class User(AbstractUser):
     accounts = models.ManyToManyField(Account, related_name='users')
 
     class Meta:
         ordering = ['username']
+
+    def __str__(self) -> str:
+        return self.username
 
     def plant_tree(
         self,
@@ -121,4 +130,4 @@ class PlantedTree(models.Model):
 
     @property
     def location(self):
-        return (self.latitude, self.longitude)
+        return (float(self.latitude), float(self.longitude))
