@@ -89,7 +89,10 @@ class User(AbstractUser):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     about = models.TextField()
-    joined = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def joined(self):
+        return self.user.date_joined
 
 
 class PlantedTree(models.Model):

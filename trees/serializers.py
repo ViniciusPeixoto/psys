@@ -22,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    joined = serializers.DateTimeField(required=False)
 
     class Meta:
         model = Profile

@@ -8,9 +8,14 @@ from trees.models import Profile
 
 
 @pytest.mark.django_db
-def test_newly_profiles_have_correct_parameters():
+def test_newly_profiles_have_correct_parameters(django_user_model):
+    username = 'test_user'
+    password = 'test_password'
+    user = django_user_model.objects.create(
+        username=username, password=password
+    )
     alpha = Profile.objects.create(
-        user_id=1, about='This is the Alpha profile'
+        user_id=user.id, about='This is the Alpha profile'
     )
     now = datetime.now().replace(tzinfo=timezone(timedelta(hours=-3)))
 
