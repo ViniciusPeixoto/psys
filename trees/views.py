@@ -1,5 +1,6 @@
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from trees.models import Account, PlantedTree, Profile, Tree, User
 from trees.serializers import (
@@ -70,3 +71,10 @@ class PlantedTreeViewSet(viewsets.ModelViewSet):
     queryset = PlantedTree.objects.all()
     serializer_class = PlantedTreeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @action(detail=False, methods=['get'])
+    def list_own(self, request, *args, **kwargs):
+        user = request.user
+        trees_queryset = PlantedTree.objects.filter(user_id=user.id)
+        serializer = PlantedTreeSerializer(trees_queryset, many=True)
+        return Response(serializer.data)
