@@ -9,10 +9,8 @@ from trees.models import Profile
 
 @pytest.mark.django_db
 def test_newly_profiles_have_correct_parameters(django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
     alpha = Profile.objects.create(
         user_id=user.id, about='This is the Alpha profile'
@@ -25,15 +23,17 @@ def test_newly_profiles_have_correct_parameters(django_user_model):
 
 @pytest.mark.django_db
 def test_profile_viewset_get(client):
-    Profile.objects.create(user_id=1, about='This is the Alpha profile')
     url = reverse('profile-list')
 
     response = client.get(url)
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    profile = response.json().pop()
-    assert profile.get('about') == 'This is the Alpha profile'
+    assert len(response.json()) == 3
+    profiles = response.json()
+    assert all(
+        profile.get('user').get('username') in ['Zeus', 'Odin', 'Francis']
+        for profile in profiles
+    )
 
 
 @pytest.mark.django_db
@@ -48,12 +48,10 @@ def test_profile_viewset_unauthorized(client):
 
 @pytest.mark.django_db
 def test_profile_viewset_post(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    data = {'user': user.id, 'about': 'This is the Alpha profile'}
+    data = {'user_id': user.id, 'about': 'This is the Alpha profile'}
     url = reverse('profile-list')
     now = datetime.now().replace(tzinfo=timezone(timedelta(hours=-3)))
 
@@ -70,21 +68,17 @@ def test_profile_viewset_post(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_profile_viewset_put(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
+def test_profile_viewset_patch(client, django_user_model):
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = Profile.objects.create(
-        user_id=1, about='This is the Alpha profile'
-    )
-    data = {'user': user.id, 'about': 'This is the Beta profile'}
+    alpha = Profile.objects.get(user__username='Zeus')
+    data = {'user_id': alpha.user.id, 'about': 'This is the Beta profile'}
     url = reverse('profile-detail', args=[alpha.id])
     now = datetime.now().replace(tzinfo=timezone(timedelta(hours=-3)))
 
     client.force_login(user)
-    response = client.put(url, data=data, content_type='application/json')
+    response = client.patch(url, data=data, content_type='application/json')
 
     assert response.status_code == 200
     assert response.json().get('about') == 'This is the Beta profile'
@@ -97,14 +91,10 @@ def test_profile_viewset_put(client, django_user_model):
 
 @pytest.mark.django_db
 def test_profile_viewset_delete(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = Profile.objects.create(
-        user_id=1, about='This is the Alpha profile'
-    )
+    alpha = Profile.objects.get(user__username='Zeus')
     url = reverse('profile-detail', args=[alpha.id])
 
     client.force_login(user)

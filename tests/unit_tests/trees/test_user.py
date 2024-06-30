@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta, timezone
+from random import uniform
 
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 
-from trees.models import Account, User
+from trees.models import Account, PlantedTree, Tree, User
 
 
 @pytest.mark.django_db
@@ -22,15 +23,16 @@ def test_newly_users_have_correct_parameters():
 
 @pytest.mark.django_db
 def test_user_viewset_get(client):
-    User.objects.create_user(username='alpha', password='beta')
     url = reverse('user-list')
 
     response = client.get(url)
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    user = response.json().pop()
-    assert user.get('username') == 'alpha'
+    assert len(response.json()) == 3
+    users = response.json()
+    assert all(
+        user.get('username') in ['Zeus', 'Odin', 'Francis'] for user in users
+    )
 
 
 @pytest.mark.django_db
@@ -45,13 +47,15 @@ def test_user_viewset_unauthorized(client):
 
 @pytest.mark.django_db
 def test_user_viewset_post(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    one = Account.objects.create(name='one')
-    data = {'username': 'alpha', 'password': 'beta', 'accounts': [one.id]}
+    humans = Account.objects.get(name='Humans')
+    data = {
+        'username': 'alpha',
+        'password': 'beta',
+        'account_ids': [humans.id],
+    }
     url = reverse('user-list')
     now = datetime.now().replace(tzinfo=timezone(timedelta(hours=-3)))
 
@@ -60,6 +64,7 @@ def test_user_viewset_post(client, django_user_model):
 
     assert response.status_code == 201
     assert response.json().get('username') == 'alpha'
+    # can't show password in response
     assert response.json().get('password') is None
 
     joined = datetime.strptime(
@@ -70,14 +75,11 @@ def test_user_viewset_post(client, django_user_model):
 
 @pytest.mark.django_db
 def test_user_viewset_patch(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = User.objects.create_user(username='alpha', password='beta')
     data = {'username': 'beta', 'is_active': False}
-    url = reverse('user-detail', args=[alpha.id])
+    url = reverse('user-detail', args=[user.id])
 
     client.force_login(user)
     response = client.patch(url, data=data, content_type='application/json')
@@ -88,7 +90,7 @@ def test_user_viewset_patch(client, django_user_model):
     joined = datetime.strptime(
         response.json().get('date_joined'), '%Y-%m-%dT%H:%M:%S.%f%z'
     )
-    assert joined == alpha.date_joined
+    assert joined == user.date_joined
     assert response.json().get('is_superuser') is False
     assert response.json().get('is_staff') is False
     assert response.json().get('is_active') is False
@@ -96,17 +98,77 @@ def test_user_viewset_patch(client, django_user_model):
 
 @pytest.mark.django_db
 def test_user_viewset_delete(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = User.objects.create_user(username='alpha', password='beta')
-    url = reverse('user-detail', args=[alpha.id])
+    zeus = User.objects.get(username='Zeus')
+    url = reverse('user-detail', args=[zeus.id])
 
     client.force_login(user)
     response = client.delete(url)
 
     assert response.status_code == 204
     with pytest.raises(ObjectDoesNotExist):
-        User.objects.get(username='alpha')
+        User.objects.get(id=zeus.id)
+
+
+@pytest.mark.django_db
+def test_user_plant_tree():
+    zeus = User.objects.get(username='Zeus')
+    tree = Tree.objects.create(
+        name='Brazilwood', scientific_name='Paubrasilia echinata'
+    )
+    zeus.plant_tree(zeus.accounts.first(), tree, (27.9811, 86.9250))
+
+    zeus_trees = PlantedTree.objects.filter(user__username='Zeus')
+    assert len(zeus_trees) == 2
+    assert all(
+        planted_tree.tree.name in ['Olive', 'Brazilwood']
+        for planted_tree in zeus_trees
+    )
+
+
+@pytest.mark.django_db
+def test_user_plant_tree_wrong_account():
+    zeus = User.objects.get(username='Zeus')
+    humans = Account.objects.get(name='Humans')
+    tree = Tree.objects.create(
+        name='Brazilwood', scientific_name='Paubrasilia echinata'
+    )
+    with pytest.raises(ValueError):
+        zeus.plant_tree(humans, tree, (27.9811, 86.9250))
+
+
+@pytest.mark.django_db
+def test_user_plant_trees():
+    zeus = User.objects.get(username='Zeus')
+    trees = [
+        planted.tree
+        for planted in PlantedTree.objects.exclude(user__username='Zeus')
+    ]
+    trees_to_plant = [
+        (tree, (uniform(-90, 90), uniform(-180, 180))) for tree in trees
+    ]
+
+    result = zeus.plant_trees(zeus.accounts.first(), trees_to_plant)
+    assert result.get('failed') == []
+
+    zeus_trees = PlantedTree.objects.filter(user__username='Zeus')
+    assert len(zeus_trees) == 3
+    assert all(
+        planted_tree.tree.name in ['Olive', 'Stone pine', 'Norway spruce']
+        for planted_tree in zeus_trees
+    )
+
+
+@pytest.mark.django_db
+def test_user_plant_trees_with_failed():
+    zeus = User.objects.get(username='Zeus')
+    humans = Account.objects.get(name='Humans')
+    trees = [planted.tree for planted in PlantedTree.objects.all()]
+    trees_to_plant = [
+        (tree, (uniform(-90, 90), uniform(-180, 180))) for tree in trees
+    ]
+
+    result = zeus.plant_trees(humans, trees_to_plant)
+    assert len(result.get('failed')) == 3

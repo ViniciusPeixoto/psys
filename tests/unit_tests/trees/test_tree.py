@@ -17,17 +17,17 @@ def test_newly_trees_have_correct_parameters():
 
 @pytest.mark.django_db
 def test_tree_viewset_get(client):
-    Tree.objects.create(
-        name='Brazilwood', scientific_name='Paubrasilia echinata'
-    )
     url = reverse('tree-list')
 
     response = client.get(url)
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    tree = response.json().pop()
-    assert tree.get('name') == 'Brazilwood'
+    assert len(response.json()) == 3
+    trees = response.json()
+    assert all(
+        tree.get('name') in ['Olive', 'Stone pine', 'Norway spruce']
+        for tree in trees
+    )
 
 
 @pytest.mark.django_db
@@ -42,10 +42,8 @@ def test_tree_viewset_unauthorized(client):
 
 @pytest.mark.django_db
 def test_tree_viewset_post(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
     data = {'name': 'Brazilwood', 'scientific_name': 'Paubrasilia echinata'}
     url = reverse('tree-list')
@@ -59,36 +57,27 @@ def test_tree_viewset_post(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_tree_viewset_put(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
+def test_tree_viewset_patch(client, django_user_model):
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    tree = Tree.objects.create(
-        name='Brazilwood', scientific_name='Paubrasilia echinata'
-    )
-    data = {'name': 'Pau-brasil', 'scientific_name': 'Paubrasilia echinata'}
+    tree = Tree.objects.get(name='Olive')
+    data = {'scientific_name': 'Paubrasilia echinata'}
     url = reverse('tree-detail', args=[tree.id])
 
     client.force_login(user)
-    response = client.put(url, data=data, content_type='application/json')
+    response = client.patch(url, data=data, content_type='application/json')
 
     assert response.status_code == 200
-    assert response.json().get('name') == 'Pau-brasil'
     assert response.json().get('scientific_name') == 'Paubrasilia echinata'
 
 
 @pytest.mark.django_db
 def test_tree_viewset_delete(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    tree = Tree.objects.create(
-        name='Brazilwood', scientific_name='Paubrasilia echinata'
-    )
+    tree = Tree.objects.get(name='Olive')
     url = reverse('tree-detail', args=[tree.id])
 
     client.force_login(user)
@@ -96,4 +85,4 @@ def test_tree_viewset_delete(client, django_user_model):
 
     assert response.status_code == 204
     with pytest.raises(ObjectDoesNotExist):
-        Tree.objects.get(name='Brazilwood')
+        Tree.objects.get(id=tree.id)

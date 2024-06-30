@@ -68,10 +68,7 @@ class User(AbstractUser):
         self,
         account: Account,
         trees: list[tuple[Tree, tuple[Decimal, Decimal]]],
-    ) -> bool:
-        if account not in self.accounts.all():
-            raise ValueError('This Account is not associated with this User.')
-
+    ) -> dict:
         success, failed = [], []
         for tree_entry in trees:
             tree, location = tree_entry
@@ -106,7 +103,7 @@ class Profile(models.Model):
 
 class PlantedTree(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    account = models.OneToOneField(Account, on_delete=models.CASCADE)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
     tree = models.ForeignKey(Tree, on_delete=models.CASCADE)
     planted_at = models.DateTimeField(default=now)
 

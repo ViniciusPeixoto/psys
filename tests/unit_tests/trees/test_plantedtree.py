@@ -2,16 +2,24 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
+from django.forms import model_to_dict
 from django.urls import reverse
 
-from trees.models import Account, PlantedTree, Tree
+from trees.models import Account, PlantedTree, Tree, User
 
 
 @pytest.mark.django_db
 def test_newly_planted_trees_have_correct_parameters():
     lat, long = (-22.0123, -47.8908)
+    user = User.objects.get(username='Zeus')
+    account = user.accounts.first()
+    tree = Tree.objects.get(name='Olive')
     alpha = PlantedTree.objects.create(
-        tree_id=1, user_id=1, account_id=1, latitude=lat, longitude=long
+        tree_id=tree.id,
+        user_id=user.id,
+        account_id=account.id,
+        latitude=lat,
+        longitude=long,
     )
     now = datetime.now().replace(tzinfo=timezone(timedelta(hours=-3)))
 
@@ -22,15 +30,18 @@ def test_newly_planted_trees_have_correct_parameters():
 
 @pytest.mark.django_db
 def test_planted_tree_viewset_get(client):
-    PlantedTree.objects.create(tree_id=1, user_id=1, account_id=1)
     url = reverse('plantedtree-list')
 
     response = client.get(url)
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    planted_tree = response.json().pop()
-    assert planted_tree.get('location') == [0, 0]
+    assert len(response.json()) == 3
+    planted_trees = response.json()
+    assert all(
+        planted.get('tree').get('name')
+        in ['Olive', 'Stone pine', 'Norway spruce']
+        for planted in planted_trees
+    )
 
 
 @pytest.mark.django_db
@@ -45,20 +56,16 @@ def test_planted_tree_viewset_unauthorized(client):
 
 @pytest.mark.django_db
 def test_planted_tree_viewset_post(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    account = Account.objects.create(name='alpha')
-    tree = Tree.objects.create(
-        name='Brazilwood', scientific_name='Paubrasilia echinata'
-    )
+    account = Account.objects.get(name='Humans')
+    tree = Tree.objects.get(name='Olive')
     lat, long = (-22.0123, -47.8908)
     data = {
-        'tree': tree.id,
-        'user': user.id,
-        'account': account.id,
+        'tree_id': tree.id,
+        'user_id': user.id,
+        'account_id': account.id,
         'latitude': lat,
         'longitude': long,
     }
@@ -80,12 +87,10 @@ def test_planted_tree_viewset_post(client, django_user_model):
 
 @pytest.mark.django_db
 def test_planted_tree_viewset_patch(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = PlantedTree.objects.create(tree_id=1, user_id=1, account_id=1)
+    alpha = PlantedTree.objects.filter(user__username='Zeus').first()
     data = {'latitude': -22.0123}
     url = reverse('plantedtree-detail', args=[alpha.id])
 
@@ -94,17 +99,15 @@ def test_planted_tree_viewset_patch(client, django_user_model):
 
     assert response.status_code == 200
     assert response.json().get('latitude') == '-22.012300'
-    assert response.json().get('longitude') == '0.000000'
+    assert response.json().get('longitude') == '22.349900'
 
 
 @pytest.mark.django_db
 def test_planted_tree_viewset_delete(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = PlantedTree.objects.create(tree_id=1, user_id=1, account_id=1)
+    alpha = PlantedTree.objects.filter(user__username='Zeus').first()
     url = reverse('plantedtree-detail', args=[alpha.id])
 
     client.force_login(user)
@@ -113,3 +116,22 @@ def test_planted_tree_viewset_delete(client, django_user_model):
     assert response.status_code == 204
     with pytest.raises(ObjectDoesNotExist):
         PlantedTree.objects.get(id=alpha.id)
+
+
+@pytest.mark.django_db
+def test_list_plants_from_current_user(client):
+    user = User.objects.get(username='Zeus')
+    client.force_login(user)
+
+    url = reverse('plantedtree-list-own')
+
+    response = client.get(url)
+
+    assert response.status_code == 200
+    trees = [
+        model_to_dict(tree)
+        for tree in PlantedTree.objects.filter(user__username='Zeus').all()
+    ]
+    results = response.json()
+    for tree, result in zip(trees, results):
+        assert tree.get('id') == result.get('id')

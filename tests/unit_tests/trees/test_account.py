@@ -19,15 +19,16 @@ def test_newly_accounts_have_correct_parameters():
 
 @pytest.mark.django_db
 def test_account_viewset_get(client):
-    Account.objects.create(name='alpha')
     url = reverse('account-list')
 
     response = client.get(url)
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    account = response.json().pop()
-    assert account.get('name') == 'alpha'
+    assert len(response.json()) == 2
+    accounts = response.json()
+    assert all(
+        account.get('name') in ['Gods', 'Humans'] for account in accounts
+    )
 
 
 @pytest.mark.django_db
@@ -42,10 +43,8 @@ def test_account_viewset_unauthorized(client):
 
 @pytest.mark.django_db
 def test_account_viewset_post(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
     data = {'name': 'alpha', 'active': True}
     url = reverse('account-list')
@@ -65,19 +64,17 @@ def test_account_viewset_post(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_account_viewset_put(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
+def test_account_viewset_patch(client, django_user_model):
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = Account.objects.create(name='alpha')
+    alpha = Account.objects.get(name='Gods')
     data = {'name': 'beta', 'active': False}
     url = reverse('account-detail', args=[alpha.id])
     now = datetime.now().replace(tzinfo=timezone(timedelta(hours=-3)))
 
     client.force_login(user)
-    response = client.put(url, data=data, content_type='application/json')
+    response = client.patch(url, data=data, content_type='application/json')
 
     assert response.status_code == 200
     assert response.json().get('name') == 'beta'
@@ -91,12 +88,10 @@ def test_account_viewset_put(client, django_user_model):
 
 @pytest.mark.django_db
 def test_account_viewset_delete(client, django_user_model):
-    username = 'test_user'
-    password = 'test_password'
     user = django_user_model.objects.create(
-        username=username, password=password
+        username='test_user', password='test_password'
     )
-    alpha = Account.objects.create(name='alpha')
+    alpha = Account.objects.get(name='Gods')
     url = reverse('account-detail', args=[alpha.id])
 
     client.force_login(user)
@@ -104,4 +99,4 @@ def test_account_viewset_delete(client, django_user_model):
 
     assert response.status_code == 204
     with pytest.raises(ObjectDoesNotExist):
-        Account.objects.get(name='alpha')
+        Account.objects.get(id=alpha.id)

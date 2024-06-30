@@ -10,18 +10,25 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    accounts = serializers.PrimaryKeyRelatedField(
-        queryset=Account.objects.all(), many=True
+    account_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.all(),
+        source='accounts',
+        write_only=True,
+        many=True,
     )
+    accounts = AccountSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
-        fields = '__all__'
+        exclude = ['password', 'groups', 'user_permissions']
         depth = 1
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='user', write_only=True
+    )
+    user = UserSerializer(read_only=True)
     joined = serializers.DateTimeField(required=False)
 
     class Meta:
@@ -37,11 +44,19 @@ class TreeSerializer(serializers.ModelSerializer):
 
 
 class PlantedTreeSerializer(serializers.ModelSerializer):
-    tree = serializers.PrimaryKeyRelatedField(queryset=Tree.objects.all())
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    account = serializers.PrimaryKeyRelatedField(
-        queryset=Account.objects.all()
+    tree_id = serializers.PrimaryKeyRelatedField(
+        queryset=Tree.objects.all(), source='tree', write_only=True
     )
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='user', write_only=True
+    )
+    account_id = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.all(), source='account', write_only=True
+    )
+    tree = TreeSerializer(read_only=True)
+    user = UserSerializer(read_only=True)
+    account = AccountSerializer(read_only=True)
+
     age = serializers.IntegerField(required=False)
     location = serializers.ListField(required=False)
 
