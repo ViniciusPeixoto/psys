@@ -72,6 +72,9 @@ def test_user_viewset_post(client, django_user_model):
     )
     assert joined - now < timedelta(seconds=5)
 
+    created = User.objects.get(username='alpha')
+    assert created.check_password('beta')
+
 
 @pytest.mark.django_db
 def test_user_viewset_patch(client, django_user_model):

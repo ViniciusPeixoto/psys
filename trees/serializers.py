@@ -20,8 +20,28 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        exclude = ['password', 'groups', 'user_permissions']
+        exclude = ['groups', 'user_permissions']
         depth = 1
+
+    def create(self, validated_data):
+        accounts = validated_data.pop('accounts')
+        password = validated_data.pop('password')
+        user = User.objects.create_user(**validated_data)
+        user.set_password(password)
+        user.accounts.set(accounts)
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        if 'password' in validated_data.keys():
+            instance.set_password(validated_data.pop('password'))
+            instance.save()
+        return super().update(instance, validated_data)
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response.pop('password')
+        return response
 
 
 class ProfileSerializer(serializers.ModelSerializer):

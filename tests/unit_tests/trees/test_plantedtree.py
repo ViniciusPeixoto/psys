@@ -123,7 +123,7 @@ def test_list_plants_from_current_user(client):
     user = User.objects.get(username='Zeus')
     client.force_login(user)
 
-    url = reverse('plantedtree-list-own')
+    url = reverse('plantedtree-own')
 
     response = client.get(url)
 

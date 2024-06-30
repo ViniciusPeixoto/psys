@@ -1,4 +1,4 @@
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -31,6 +31,21 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    @action(detail=True, methods=['get'])
+    def planted(self, request, pk=None, *args, **kwargs):
+        user = User.objects.get(pk=pk)
+        current_user = request.user
+        if not current_user.is_superuser:
+            if not current_user == user:
+                return Response(
+                    {'error': "Can't access Planted Trees from another user"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        trees_queryset = PlantedTree.objects.filter(user_id=user.id)
+        serializer = PlantedTreeSerializer(trees_queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class TreeViewSet(viewsets.ModelViewSet):
     """
@@ -62,7 +77,7 @@ class PlantedTreeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @action(detail=False, methods=['get'])
-    def list_own(self, request, *args, **kwargs):
+    def own(self, request, *args, **kwargs):
         user = request.user
         trees_queryset = PlantedTree.objects.filter(user_id=user.id)
         serializer = PlantedTreeSerializer(trees_queryset, many=True)
