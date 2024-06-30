@@ -20,7 +20,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        exclude = ['groups', 'user_permissions']
+        fields = [
+            'id',
+            'username',
+            'password',
+            'is_active',
+            'account_ids',
+            'accounts',
+            'date_joined',
+        ]
         depth = 1
 
     def create(self, validated_data):

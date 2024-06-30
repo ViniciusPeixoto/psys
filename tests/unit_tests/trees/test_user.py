@@ -3,6 +3,7 @@ from random import uniform
 
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
+from django.forms import model_to_dict
 from django.urls import reverse
 
 from trees.models import Account, PlantedTree, Tree, User
@@ -94,8 +95,6 @@ def test_user_viewset_patch(client, django_user_model):
         response.json().get('date_joined'), '%Y-%m-%dT%H:%M:%S.%f%z'
     )
     assert joined == user.date_joined
-    assert response.json().get('is_superuser') is False
-    assert response.json().get('is_staff') is False
     assert response.json().get('is_active') is False
 
 
@@ -113,6 +112,38 @@ def test_user_viewset_delete(client, django_user_model):
     assert response.status_code == 204
     with pytest.raises(ObjectDoesNotExist):
         User.objects.get(id=zeus.id)
+
+
+@pytest.mark.django_db
+def test_user_viewset_planted(client):
+    zeus = User.objects.get(username='Zeus')
+
+    url = reverse('user-planted', args=[zeus.id])
+
+    client.force_login(zeus)
+    response = client.get(url)
+
+    assert response.status_code == 200
+    trees = [
+        model_to_dict(tree)
+        for tree in PlantedTree.objects.filter(user__username='Zeus')
+    ]
+    results = response.json()
+    for tree, result in zip(trees, results):
+        assert tree.get('id') == result.get('id')
+
+
+@pytest.mark.django_db
+def test_user_viewset_planted_different_account(client):
+    zeus = User.objects.get(username='Zeus')
+    pope = User.objects.get(username='Francis')
+
+    url = reverse('user-planted', args=[zeus.id])
+
+    client.force_login(pope)
+    response = client.get(url)
+
+    assert response.status_code == 403
 
 
 @pytest.mark.django_db

@@ -82,3 +82,19 @@ class PlantedTreeViewSet(viewsets.ModelViewSet):
         trees_queryset = PlantedTree.objects.filter(user_id=user.id)
         serializer = PlantedTreeSerializer(trees_queryset, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def account(self, request, *args, **kwargs):
+        account_name = request.GET.get('account')
+        current_user = request.user
+        if not current_user.is_superuser:
+            if not current_user.accounts.filter(name=account_name).exists():
+                return Response(
+                    {
+                        'error': "Can't access Planted Trees from accounts you are not part of"
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        trees_queryset = PlantedTree.objects.filter(account__name=account_name)
+        serializer = PlantedTreeSerializer(trees_queryset, many=True)
+        return Response(serializer.data)

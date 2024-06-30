@@ -135,3 +135,36 @@ def test_list_plants_from_current_user(client):
     results = response.json()
     for tree, result in zip(trees, results):
         assert tree.get('id') == result.get('id')
+
+
+@pytest.mark.django_db
+def test_list_plants_from_account(client):
+    user = User.objects.get(username='Zeus')
+    user_account = user.accounts.first()
+    client.force_login(user)
+
+    url = reverse('plantedtree-account')
+
+    response = client.get(url, data={'account': user_account.name})
+
+    assert response.status_code == 200
+    trees = [
+        model_to_dict(tree)
+        for tree in PlantedTree.objects.filter(account__name=user_account.name)
+    ]
+    results = response.json()
+    for tree, result in zip(trees, results):
+        assert tree.get('id') == result.get('id')
+
+
+@pytest.mark.django_db
+def test_list_plants_from_another_account(client):
+    user = User.objects.get(username='Zeus')
+    another_account = Account.objects.exclude(users__username='Zeus').first()
+    client.force_login(user)
+
+    url = reverse('plantedtree-account')
+
+    response = client.get(url, data={'account': another_account.name})
+
+    assert response.status_code == 403
