@@ -10,6 +10,14 @@ default:
   - django.contrib.staticfiles
   - rest_framework
   - trees
+  DATABASES:
+    default:
+      ENGINE: 'django.db.backends.postgresql'
+      USER: admin
+      NAME: ysdb
+      PORT: 5432
+      TEST:
+        NAME: testing
   CHAR_FIELD_MAX_LENGTH: 100
 development:
   DEBUG: True
