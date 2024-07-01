@@ -48,6 +48,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
+        # can't leave password exposed
         response.pop('password')
         return response
 

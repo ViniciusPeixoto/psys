@@ -87,6 +87,7 @@ class PlantedTreeViewSet(viewsets.ModelViewSet):
     ]
 
     def list(self, request, *args, **kwargs):
+        # Can't show users Planted Trees they aren't supposed to see
         return Response(
             {'message': 'List function is not offered in this path'},
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
