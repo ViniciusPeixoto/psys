@@ -30,5 +30,6 @@ router.registry.extend(tree_router.registry)
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
-    path('login/', LoginView.as_view(), name='login-user'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('logout/', LoginView.as_view(), name='logout'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

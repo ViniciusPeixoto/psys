@@ -104,10 +104,32 @@ def test_planted_tree_viewset_post(client, django_user_model):
 
 
 @pytest.mark.django_db
-def test_planted_tree_viewset_patch(client, django_user_model):
+def test_planted_tree_viewset_post_for_another_user(client, django_user_model):
     user = django_user_model.objects.create(
         username='test_user', password='test_password'
     )
+    zeus = User.objects.get(username='Zeus')
+    account = Account.objects.get(name='Humans')
+    tree = Tree.objects.get(name='Olive')
+    lat, long = (-22.0123, -47.8908)
+    data = {
+        'tree_id': tree.id,
+        'user_id': zeus.id,
+        'account_id': account.id,
+        'latitude': lat,
+        'longitude': long,
+    }
+    url = reverse('plantedtree-list')
+
+    client.force_login(user)
+    response = client.post(url, data=data, content_type='application/json')
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_planted_tree_viewset_patch(client, django_user_model):
+    user = django_user_model.objects.get(username='Zeus')
     alpha = PlantedTree.objects.filter(user__username='Zeus').first()
     data = {'latitude': -22.0123}
     url = reverse('plantedtree-detail', args=[alpha.id])
@@ -122,9 +144,7 @@ def test_planted_tree_viewset_patch(client, django_user_model):
 
 @pytest.mark.django_db
 def test_planted_tree_viewset_delete(client, django_user_model):
-    user = django_user_model.objects.create(
-        username='test_user', password='test_password'
-    )
+    user = django_user_model.objects.get(username='Zeus')
     alpha = PlantedTree.objects.filter(user__username='Zeus').first()
     url = reverse('plantedtree-detail', args=[alpha.id])
 

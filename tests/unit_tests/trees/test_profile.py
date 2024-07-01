@@ -69,9 +69,7 @@ def test_profile_viewset_post(client, django_user_model):
 
 @pytest.mark.django_db
 def test_profile_viewset_patch(client, django_user_model):
-    user = django_user_model.objects.create(
-        username='test_user', password='test_password'
-    )
+    user = django_user_model.objects.get(username='Zeus')
     alpha = Profile.objects.get(user__username='Zeus')
     data = {'user_id': alpha.user.id, 'about': 'This is the Beta profile'}
     url = reverse('profile-detail', args=[alpha.id])
@@ -91,9 +89,7 @@ def test_profile_viewset_patch(client, django_user_model):
 
 @pytest.mark.django_db
 def test_profile_viewset_delete(client, django_user_model):
-    user = django_user_model.objects.create(
-        username='test_user', password='test_password'
-    )
+    user = django_user_model.objects.get(username='Zeus')
     alpha = Profile.objects.get(user__username='Zeus')
     url = reverse('profile-detail', args=[alpha.id])
 

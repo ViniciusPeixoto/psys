@@ -100,13 +100,10 @@ def test_user_viewset_patch(client, django_user_model):
 
 @pytest.mark.django_db
 def test_user_viewset_delete(client, django_user_model):
-    user = django_user_model.objects.create(
-        username='test_user', password='test_password'
-    )
-    zeus = User.objects.get(username='Zeus')
+    zeus = django_user_model.objects.get(username='Zeus')
     url = reverse('user-detail', args=[zeus.id])
 
-    client.force_login(user)
+    client.force_login(zeus)
     response = client.delete(url)
 
     assert response.status_code == 204

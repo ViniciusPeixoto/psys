@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from trees.models import Account, PlantedTree, Profile, Tree, User
+from trees.permissions import IsOwnerOrAdmin
 from trees.serializers import (
     AccountSerializer,
     PlantedTreeSerializer,
@@ -31,20 +32,15 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsOwnerOrAdmin,
+    ]
 
     @action(detail=True, methods=['get'])
     def planted(self, request, pk=None, *args, **kwargs):
-        user = User.objects.get(pk=pk)
-        current_user = request.user
-        if not current_user.is_superuser:
-            if not current_user == user:
-                return Response(
-                    {'error': "Can't access Planted Trees from another user"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-        trees_queryset = PlantedTree.objects.filter(user_id=user.id)
+        self.check_object_permissions(request, User.objects.get(pk=pk))
+        trees_queryset = PlantedTree.objects.filter(user_id=pk)
         serializer = PlantedTreeSerializer(trees_queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -66,7 +62,10 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsOwnerOrAdmin,
+    ]
 
     def retrieve(self, request, pk=None):
         # retrieves profile based on user
@@ -82,7 +81,10 @@ class PlantedTreeViewSet(viewsets.ModelViewSet):
 
     queryset = PlantedTree.objects.all()
     serializer_class = PlantedTreeSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly,
+        IsOwnerOrAdmin,
+    ]
 
     def list(self, request, *args, **kwargs):
         return Response(
@@ -90,17 +92,11 @@ class PlantedTreeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
-    def retrieve(self, request, pk=None, *args, **kwargs):
-        tree = PlantedTree.objects.get(pk=pk)
-        user = tree.user
-        current_user = request.user
-        if not current_user.is_superuser:
-            if not current_user == user:
-                return Response(
-                    {'error': "Can't access Planted Trees from another user"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-        return super().retrieve(request, pk, *args, **kwargs)
+    def create(self, request, *args, **kwargs):
+        self.check_object_permissions(
+            request, User.objects.get(id=request.data.get('user_id'))
+        )
+        return super().create(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'])
     def own(self, request, *args, **kwargs):
@@ -142,7 +138,6 @@ class LoginView(APIView):
             {'login': 'failed'}, status=status.HTTP_401_UNAUTHORIZED
         )
 
-    @action(detail=False, methods=['POST'])
-    def logout(self, request):
+    def delete(self, request):
         logout(request)
         return Response({'logout': 'success'}, status=status.HTTP_200_OK)
