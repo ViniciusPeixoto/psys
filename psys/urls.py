@@ -22,6 +22,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from trees.urls import router as tree_router
+from trees.views import LoginView
 
 router = DefaultRouter()
 router.registry.extend(tree_router.registry)
@@ -29,5 +30,5 @@ router.registry.extend(tree_router.registry)
 urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
-    path('auth/', include('rest_framework.urls')),
+    path('login/', LoginView.as_view(), name='login-user'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

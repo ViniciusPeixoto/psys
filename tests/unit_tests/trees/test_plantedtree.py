@@ -34,14 +34,32 @@ def test_planted_tree_viewset_get(client):
 
     response = client.get(url)
 
+    # cannot list all planted trees
+    assert response.status_code == 405
+
+
+@pytest.mark.django_db
+def test_planted_tree_viewset_get_tree(client):
+    planted = PlantedTree.objects.filter(user__username='Zeus').first()
+    user = User.objects.get(username='Zeus')
+    url = reverse('plantedtree-detail', args=[planted.id])
+
+    client.force_login(user)
+    response = client.get(url)
+
     assert response.status_code == 200
-    assert len(response.json()) == 3
-    planted_trees = response.json()
-    assert all(
-        planted.get('tree').get('name')
-        in ['Olive', 'Stone pine', 'Norway spruce']
-        for planted in planted_trees
-    )
+
+
+@pytest.mark.django_db
+def test_planted_tree_viewset_get_tree_from_another_user(client):
+    planted = PlantedTree.objects.exclude(user__username='Zeus').first()
+    user = User.objects.get(username='Zeus')
+    url = reverse('plantedtree-detail', args=[planted.id])
+
+    client.force_login(user)
+    response = client.get(url)
+
+    assert response.status_code == 403
 
 
 @pytest.mark.django_db
