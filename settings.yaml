@@ -9,6 +9,7 @@ default:
   - django.contrib.messages
   - django.contrib.staticfiles
   - rest_framework
+  - corsheaders
   - trees
   DATABASES:
     default:
@@ -19,5 +20,16 @@ default:
       TEST:
         NAME: testing
   CHAR_FIELD_MAX_LENGTH: 100
+  REST_FRAMEWORK:
+    DEFAULT_AUTHENTICATION_CLASSES:
+    - 'rest_framework.authentication.SessionAuthentication'
+    - 'rest_framework.authentication.BasicAuthentication'
 development:
   DEBUG: True
+  CORS_ALLOWED_ORIGINS:
+  - http://localhost:3000
+  CORS_ALLOW_CREDENTIALS: True
+  CSRF_TRUSTED_ORIGINS:
+  - http://localhost:3000
+  CSRF_COOKIE_NAME: 'csrftoken'
+  CSRF_COOKIE_HTTPONLY: False
