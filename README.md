@@ -33,7 +33,8 @@ First, you will need to activate Poetry's virtual environment, and then install 
 > \> poetry shell  
 > \> poetry install
 
-After that, create a new superuser using Django's management system:
+After that, run the database migrations and create a new superuser using Django's management system:
+> \> python manage.py migrate  
 > \> python manage.py createsuperuser
 
 You'll need at least this first admin user to start all other API resources.
