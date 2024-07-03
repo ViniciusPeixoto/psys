@@ -23,7 +23,10 @@ The settings that need configuring are given by comments in the file.
 A PostgreSQL database is needed as well. You can create one by going into your PostgreSQL instance and running the command:
 > postgres# CREATE DATABASE *database_name* WITH OWNER *database_user*;
 
-Remember to configure the same database name and database user on the `settings.yaml` file.
+Set your user to being able to create databases in order for the Django testing suite be able to create the testing environment database: 
+> postgres# ALTER USER *database_user* CREATEDB;
+
+Remember to configure the same database name and database user on the `settings.yaml` file, and the same password on the `.secrets.yaml` file.
 
 ## Running the project
 First, you will need to activate Poetry's virtual environment, and then install all the dependencies with Poetry:
@@ -35,9 +38,12 @@ After that, create a new superuser using Django's management system:
 
 You'll need at least this first admin user to start all other API resources.
 
+Collect the standard static files from Django/Django Rest Framework by running the command:
+> \> python manage.py collectstatic
+
 The `pypoetry.toml` file sets up some aliases using [Taskipy](pypi.org/project/taskipy).
 
-to run all tests, use the command:
+To run all tests, use the command:
 > \> task test
 
 After ensuring everything works, you can run the API using:
